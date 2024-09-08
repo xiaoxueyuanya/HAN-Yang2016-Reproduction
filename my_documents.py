@@ -23,10 +23,12 @@ class MyDocuments(object):
   
     def get_a_train_doc(self):
         doc_sentences = []
+        label = []
         try:
             line = self.train_file.readline()
             data = json.loads(line)
             text = data["text"]
+            label = data["stars"]
             sentences = nltk.sent_tokenize(text)
             for sentence in sentences:
                 doc_sentences.append(
@@ -39,7 +41,7 @@ class MyDocuments(object):
                 self.train_file = open(os.path.join(
                     self.dirname, self.filenames[self.train_indices[self.train_file_count]]), 'r')
                 doc_sentences = self.get_a_train_doc()
-        return doc_sentences
+        return doc_sentences, label
             
     def get_a_train_batch_doc(self): 
         batch_sentences = []
