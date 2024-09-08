@@ -12,8 +12,7 @@ from torch.nn import functional as F
 from d2l import torch as d2l
 from gensim.models import Word2Vec
 import math
-from stanfordcorenlp import StanfordCoreNLP as nlp
-from my_sentences import MySentences
+from my_documents import MyDocuments
 import my_gru
 import numpy
 
@@ -235,15 +234,31 @@ mini_batch = 64
 data_folder = 'G:/NLP/word2vec/yelp_dataset_review/'
 train_indices_dir = 'G:/NLP/word2vec/train_indices.pkl'
 test_indices_dir = 'G:/NLP/word2vec/test_indices.pkl'
-sentences = MySentences(data_folder, train_indices_dir, test_indices_dir, mini_batch)
+documents = MyDocuments(data_folder, train_indices_dir, test_indices_dir, mini_batch)
 
 # Get a batch of sentences
-batch_sentences, max_sentence_len, is_senteces_end = sentences.get_a_train_batch()
+batch_docs, max_sentence_len, is_senteces_end = documents.get_a_train_batch_doc()
 
 # Embedding
 W_e = Word2Vec.load('./word2vec/trained_model/my_word2vec_model_00')
 
-# Word Encoder&Sentence Encoder(Using bidirectional GRU) 
+# Word Encoder Encoder(Using bidirectional GRU) 
+word_gru = nn.GRU(input_size=word_vec_size, hidden_size=gru_dim, batch_first=True,
+                  device=d2l.try_gpu())
+
+for doc in batch_docs:
+    for sentence in doc:
+        words_vec = []
+        for word in sentence:
+            vec = W_e.wv.get_vector(word).tolist()
+            words_vec.append(vec)
+        w_i = torch.Tensor(words_vec)
+        out, _ = word_gru(w_i)
+        print(out)
+
+
+
+
 gru_params_f = my_gru.get_params(word_vec_size, gru_dim, d2l.try_gpu())
 gru_h_f = my_gru.init_state(mini_batch, gru_dim, d2l.try_gpu())
 gru_params_b = my_gru.get_params(word_vec_size, gru_dim, d2l.try_gpu())
