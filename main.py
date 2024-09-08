@@ -13,41 +13,8 @@ from d2l import torch as d2l
 from gensim.models import Word2Vec
 import math
 from my_documents import MyDocuments
-import my_gru
-import numpy
-
-
-
-##########################################################################
-#                  Word Attention & Sentence Attention                   #
-##########################################################################
-
-def get_params_attention(inputs_size, device):
-    params_w = inputs_size
-    
-    def normal(shape):
-        return torch.randn(size=shape, device=device) * 0.01
-    
-    W_w = normal((params_w, params_w))
-    b_w = torch.zeros(params_w, device=device)
-    
-    params = [W_w, b_w]
-    for param in params:
-        param.requires_grad_(True)
-    return params
-
-
-def attention(inputs, params):
-    W_w, b_w = params
-    
-    u_w = []
-    for x in inputs:
-        u_it = torch.tanh((W_w @ x) + b_w)
-        u_w.append(u_it)
-    alpha = torch.softmax(u_w);
-        
-    s = torch.sum(torch.mul(alpha, x))    
-    return s
+from my_attention import MyAttention
+from my_fc import MyFC
    
 # def get_params():
 #     return [get_params_gru(), get_params_attention()]
@@ -230,6 +197,7 @@ word_vec_size = 200
 gru_dim = 50
 context_vec_size = 100
 mini_batch = 64
+num_epochs = 10
 
 data_folder = 'G:/NLP/word2vec/yelp_dataset_review/'
 train_indices_dir = 'G:/NLP/word2vec/train_indices.pkl'
@@ -237,26 +205,64 @@ test_indices_dir = 'G:/NLP/word2vec/test_indices.pkl'
 documents = MyDocuments(data_folder, train_indices_dir, test_indices_dir, mini_batch)
 
 # Get a batch of sentences
-batch_docs, max_sentence_len, is_senteces_end = documents.get_a_train_batch_doc()
+# batch_docs, max_sentence_len, is_senteces_end = documents.get_a_train_batch_doc()
 
 # Embedding
 W_e = Word2Vec.load('./word2vec/trained_model/my_word2vec_model_00')
 
-# Word Encoder Encoder(Using bidirectional GRU) 
+# Word Encoder (Using bidirectional GRU) 
 word_gru = nn.GRU(input_size=word_vec_size, hidden_size=gru_dim, batch_first=True,
-                  device=d2l.try_gpu())
+                  device=d2l.try_gpu(), bidirectional=True)
+# Word Attention
+word_attention = MyAttention(gru_dim*2, d2l.try_gpu())
 
-for doc in batch_docs:
-    for sentence in doc:
-        words_vec = []
-        for word in sentence:
-            vec = W_e.wv.get_vector(word).tolist()
-            words_vec.append(vec)
-        w_i = torch.Tensor(words_vec)
-        out, _ = word_gru(w_i)
-        print(out)
+# Sentence Encoder (Using bidirectional GRU) 
+sente_gru = nn.GRU(input_size=context_vec_size, hidden_size=gru_dim, batch_first=True,
+                   device=d2l.try_gpu(), bidirectional=True)
+# Sentence Attention
+sente_attention = MyAttention(gru_dim*2, d2l.try_gpu())
 
+# Classification
+fc = MyFC(inputs_size=context_vec_size, outputs_size=1, device=d2l.try_gpu())
 
+# Optimizer
+learning_rate = 0.01
+optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
+# Start processing
+doc = documents.get_a_train_doc()
+S = torch.empty((len(doc) , 100))
+count = 0
+for sentence in doc[0]:
+    x_i = []
+    for w_it in sentence:
+        x_it = W_e.wv.get_vector(w_it).tolist()
+        x_i.append(x_it)
+    x_i = torch.Tensor(x_i)
+    h_i, _ = word_gru(x_i)
+    s_i = word_attention.forward(h_i)
+    S[count] = s_i
+    count += 1
 
+h_i, _ = sente_gru(S) # For sentence
+v = sente_attention.forward(h_i) # For sentence
 
+p = fc.forward(v);
+
+# Train
+for epoch in range(num_epochs):
+    # Forward
+    outputs = model(inputs)
+    loss = abs(p - doc[1]) 
+
+    # Backward and optimize
+    optimizer.zero_grad()  # 清零梯度
+    loss.backward()        # 计算梯度
+    optimizer.step()       # 更新参数
+
+    # Print loss
+    if (epoch + 1) % 10 == 0:
+        print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
+
+# 打印模型参数
+# print("Model parameters:", list(model.parameters()))
