@@ -4,7 +4,7 @@ import os
 import re
 import nltk
 
-class MySentences(object):
+class MyDocuments(object):
     def __init__(self, dirname, train_indices_dir, test_indices_dir, 
                  mini_batch):
         self.dirname = dirname
