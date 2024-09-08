@@ -259,40 +259,4 @@ for doc in batch_docs:
 
 
 
-gru_params_f = my_gru.get_params(word_vec_size, gru_dim, d2l.try_gpu())
-gru_h_f = my_gru.init_state(mini_batch, gru_dim, d2l.try_gpu())
-gru_params_b = my_gru.get_params(word_vec_size, gru_dim, d2l.try_gpu())
-gru_h_b = my_gru.init_state(mini_batch, gru_dim, d2l.try_gpu())
-
-for i in range(0, max_sentence_len):
-    batch_wordvec_f = [] # Forward
-    batch_wordvec_b = [] # Backward
-    for j in range(0, mini_batch):
-        # Get vector of words in forward
-        vec = []       
-        try:
-            vec = W_e.wv.get_vector(batch_sentences[j][i]).tolist()
-        except:
-            vec = [0]*word_vec_size
-        batch_wordvec_f.append(vec)
-        # Get vector of words in forward
-        vec = []
-        try:
-            vec = W_e.wv.get_vector(batch_sentences[j][max_sentence_len-1-i]).tolist()
-        except:
-            vec = [0]*word_vec_size
-        batch_wordvec_b.append(vec)
-    batch_wordvec_f = torch.Tensor(batch_wordvec_f)
-    batch_wordvec_b = torch.Tensor(batch_wordvec_b)
-    gru_h_f = my_gru.gru(batch_wordvec_f, gru_h_f, gru_params_f)
-    gru_h_b = my_gru.gru(batch_wordvec_b, gru_h_b, gru_params_b)
-# Bi-GRU = [forward, backward]
-# gru_out = torch.cat(gru_h_f, gru_h_b)
-    count = 0
-    for X in gru_h_f:
-        print(X)
-        count += 1
-        if count > 5:
-            break;
-
 
