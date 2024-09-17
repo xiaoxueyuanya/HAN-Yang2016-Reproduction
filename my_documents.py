@@ -39,24 +39,26 @@ class MyDocuments(object):
             self.train_file_count += 1
             if self.train_file_count >= len(self.filenames):
                 doc_sentences = []
+                label = 0
             else:
                 filename = self.filenames[self.train_indices[self.train_file_count]]
                 self.train_file = open(os.path.join(self.dirname, filename), 'r')
                 print("Load documents in " + filename)
-                doc_sentences = self.get_a_train_doc() # put the tokenized sentences into     doc_sentences
+                # put the tokenized sentences into doc_sentences
+                doc_sentences, label = self.get_a_train_doc() 
         return doc_sentences, label
             
     def get_a_train_batch_doc(self): 
         batch_sentences = []
-        max_sentece_len = 0
+        batch_labels = []
         is_end_file = False
-        for i in range(0, self.mini_batch):
-            sentence = self.get_a_train_doc() 
-            if len(sentence) == 0: # get last sentence
+        for _ in range(0, self.mini_batch):
+            doc_sentences, label = self.get_a_train_doc() 
+            if len(doc_sentences) == 0: # for the last sentence
                 batch_sentences.append([""])
+                batch_labels.append(label)
                 is_end_file = True
             else:
-                batch_sentences.append(sentence) # append sentences into the batch
-                if(len(sentence) > max_sentece_len):
-                    max_sentece_len = len(sentence) # get max_sentece_len
-        return batch_sentences, max_sentece_len, is_end_file
+                batch_sentences.append(doc_sentences) # append sentences into the batch
+                batch_labels.append(label)
+        return batch_sentences, batch_labels, is_end_file
