@@ -10,8 +10,8 @@ class MyFC(object):
     def forward(self, inputs):
         out = torch.empty((inputs.shape[0], 1))
         count = 0
-        for x in inputs:
-            out[count] = (x @ self.W) + self.b
-            count += 1
+        # for x in inputs:
+        out[count] = (inputs @ self.W) + self.b
+        #    count += 1
         out = torch.softmax(out, dim=0)
         return out

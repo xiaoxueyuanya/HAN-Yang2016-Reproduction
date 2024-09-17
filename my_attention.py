@@ -3,7 +3,7 @@ import torch
 class MyAttention(object):
     def __init__(self, inputs_size, device):
         params_w = inputs_size        
-        self.W_w = torch.randn(size=(params_w, params_w), device=device) * 0.01
+        self.W_w = torch.rand(size=(params_w, params_w), device=device) * 0.01
         self.W_w.requires_grad_(True)
         self.b_w = torch.zeros(params_w, device=device)
         self.b_w.requires_grad_(True)
